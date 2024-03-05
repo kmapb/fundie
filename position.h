@@ -29,8 +29,9 @@ struct Holding {
 };
 
 struct Position {
-    const std::vector<Holding> holdings;
-    Position(const std::vector<Holding>& h) : holdings(h) {}
+    Position(const std::vector<Holding>& h) : holdings(h) {
+        validate();
+    }
 
     double ownership() const {
         return std::accumulate(holdings.begin(), holdings.end(), 0.0,
@@ -44,4 +45,17 @@ struct Position {
         return std::accumulate(holdings.begin(), holdings.end(), 0.0,
             [](double acc, const Holding& h) { return acc + h.value; });
     }
+
+    void validate() const {
+        if (ownership() <= 0.0 || ownership() >= 1.0) {
+            throw std::runtime_error("impossible ownership");
+        }
+    }
+
+    void add(const Holding& h) {
+        holdings.push_back(h);
+        validate();
+    }
+  protected:
+    std::vector<Holding> holdings;
 };
