@@ -1,5 +1,6 @@
 #include <cstdio>
 #include "stage.h"
+#include "position.h"
 
 int main(int argc, char** argv) {
     printf("yarr ...\n");
