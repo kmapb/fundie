@@ -1,6 +1,9 @@
+#pragma once
 #include <chrono>
 #include <ctime>
 #include <stdexcept>
+#include <vector>
+#include <numeric>
 
 typedef std::chrono::time_point<std::chrono::system_clock> CalTime;
 static inline CalTime YMD(int year, int month, int day) {
@@ -18,9 +21,27 @@ static inline CalTime YMD(int year, int month, int day) {
     return std::chrono::system_clock::from_time_t(time);
 }
 
-struct Position {
+struct Holding {
     CalTime acquired;
     double ownership;
     double cost;
     double value;
+};
+
+struct Position {
+    const std::vector<Holding> holdings;
+    Position(const std::vector<Holding>& h) : holdings(h) {}
+
+    double ownership() const {
+        return std::accumulate(holdings.begin(), holdings.end(), 0.0,
+            [](double acc, const Holding& h) { return acc + h.ownership; });
+    }
+    double cost() const {
+        return std::accumulate(holdings.begin(), holdings.end(), 0.0,
+            [](double acc, const Holding& h) { return acc + h.cost; });
+    }
+    double value() const {
+        return std::accumulate(holdings.begin(), holdings.end(), 0.0,
+            [](double acc, const Holding& h) { return acc + h.value; });
+    }
 };

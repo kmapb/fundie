@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include "position.h"
 
 typedef double currency_t;
 typedef double pct_t;
@@ -26,3 +27,6 @@ typedef enum {
     DIE,
     EXIT,
 } StageResult;
+
+extern Position
+traverse_stage(const Stage& before, const Stage& after, const Position& in);
