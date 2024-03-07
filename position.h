@@ -21,15 +21,27 @@ static inline CalTime YMD(int year, int month, int day) {
     return std::chrono::system_clock::from_time_t(time);
 }
 
+class Asset {
+    const char* id_;
+    double value_;
+public:
+    Asset(const char* id, double value) : id_(id), value_(value) {}
+    const char* id() const { return id_; }
+    const double value() const { return value_; }
+    void set_value(double new_value) { value_ = new_value; }
+};
+
 struct Holding {
     CalTime acquired;
     double ownership;
     double cost;
-    double value;
 };
 
 struct Position {
-    Position(const std::vector<Holding>& h) : holdings(h) {
+    Position(Asset &asset, const std::vector<Holding> &h)
+        : asset(asset),
+          holdings(h)
+    {
         validate();
     }
 
@@ -42,8 +54,7 @@ struct Position {
             [](double acc, const Holding& h) { return acc + h.cost; });
     }
     double value() const {
-        return std::accumulate(holdings.begin(), holdings.end(), 0.0,
-            [](double acc, const Holding& h) { return acc + h.value; });
+        return asset.value() * ownership();
     }
 
     void validate() const {
@@ -56,6 +67,16 @@ struct Position {
         holdings.push_back(h);
         validate();
     }
+
+    void dilute(const double dilution) {
+        // Doesn't affect cost, just ownership
+        for (auto &h: holdings) {
+            h.ownership *= (1.0 - dilution);
+        }
+    }
+
   protected:
+    Asset& asset;
     std::vector<Holding> holdings;
 };
+

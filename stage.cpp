@@ -14,3 +14,4 @@ const Stage stages[] = {
 };
 
 const int num_stages = sizeof(stages) / sizeof(Stage);
+
