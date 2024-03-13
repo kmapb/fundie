@@ -21,4 +21,5 @@ target_link_libraries(${exec_name} fund_logic ${GTEST_LIBRARIES} GTest::Main )
 endfunction()
 
 add_gtest_executable(test_position test/test_position.cpp)
+add_gtest_executable(test_stage test/test_stage.cpp)
 
