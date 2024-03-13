@@ -60,9 +60,13 @@ TEST(Portfolio, Basics) {
         return uint64_t((pct / 100.0) * shares);
     };
     Fund f1 { 3e7, 1e6, 0.2 };
-    auto& pos = f1.getPosition(a1);
-    // pos.buy(YMD(2025, 2, 1), 1e6, pct_of_shares(20));
-    // pos.buy(YMD(2026, 2, 1), 2e5, pct_of_shares(2));
-    // pos.buy(YMD(2027, 2, 1), 4e5, pct_of_shares(2));
+    auto& pos = f1.get_position(a1);
+    pos.buy(YMD(2025, 2, 1), 1e6, pct_of_shares(20));
+    pos.buy(YMD(2026, 2, 1), 2e5, pct_of_shares(2));
+    pos.buy(YMD(2027, 2, 1), 4e5, pct_of_shares(2));
+
+    Asset a2 {"GOOG", 1e12 };
+    auto& pos2 = f1.get_position(a2);
+    pos2.buy(YMD(2024, 4, 1), 1e6, pct_of_shares(1));
 }
 
