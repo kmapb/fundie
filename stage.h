@@ -28,5 +28,5 @@ typedef enum {
     EXIT,
 } StageResult;
 
-extern Position
-traverse_stage(const Stage& before, const Stage& after, const Position& in);
+StageResult
+traverse_stage(const Stage& next, const Position& in);
