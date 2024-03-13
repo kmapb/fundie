@@ -22,12 +22,12 @@ static inline CalTime YMD(int year, int month, int day) {
 }
 
 class Asset {
-    const char* id_;
+    std::string id_;
     double value_;
 public:
     Asset(const char* id, double value) : id_(id), value_(value) {}
-    const char* id() const { return id_; }
     const double value() const { return value_; }
+    const std::string& name() const { return id_; }
     void set_value(double new_value) { value_ = new_value; }
 };
 

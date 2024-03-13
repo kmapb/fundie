@@ -31,7 +31,7 @@ double computeProRata(Round &round,
     double dilutedO = prevOwnership * (1.0 - dilution);
     assert(dilutedO > 0.0 && dilutedO < 1.0);
 
-    double approxProRata = (prevOwnership - dilutedO) * round.postMV;
+    double approxProRata = (targetOwnership - dilutedO) * round.postMV;
     round.setNewMoney(moneyInSoFar + approxProRata);
     return approxProRata;
 }
