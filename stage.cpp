@@ -15,20 +15,20 @@ const Stage stages[] = {
 
 const int num_stages = sizeof(stages) / sizeof(Stage);
 
-StageResult
-traverse_stage(const Stage& stage, Asset& asset) {
-    auto result = StageResult::CONTINUE;
+Stage::Result
+Stage::traverse_stage(Asset& asset) {
+    auto result = Result::CONTINUE;
     auto dice = double(random()) / RAND_MAX;
-    if (dice < stage.p_write_off) {
-        return StageResult::CONTINUE;
+    if (dice < p_write_off) {
+        return Result::CONTINUE;
     }
-    dice -= stage.p_write_off;
-    if (dice < stage.p_exit) {
-        result = StageResult::EXIT;
+    dice -= p_write_off;
+    if (dice < p_exit) {
+        result = Result::EXIT;
     }
-    asset.set_value(stage.post_money_valuation - stage.round_size);
-    asset.accept_new_money(stage.round_size);
-    asset.reserve_option_pool(stage.option_pool);
+    asset.set_value(post_money_valuation - round_size);
+    asset.accept_new_money(round_size);
+    asset.reserve_option_pool(option_pool);
     return result;
 }
 

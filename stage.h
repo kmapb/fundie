@@ -17,16 +17,15 @@ struct Stage {
     // State transition probabiblities
     const prob_t p_write_off;
     const prob_t p_exit;
+    typedef enum {
+        CONTINUE,
+        DIE,
+        EXIT,
+    } Result;
+
+    Result traverse_stage(Asset& asset);
 };
 
 extern const int num_stages;
 extern const Stage stages[];
 
-typedef enum {
-    CONTINUE,
-    DIE,
-    EXIT,
-} StageResult;
-
-StageResult
-traverse_stage(const Stage& next, const Position& in);

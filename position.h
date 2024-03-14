@@ -36,6 +36,7 @@ public:
     uint64_t accept_new_money(double money_in) {
         uint64_t new_shares = money_in / value_;
         outstanding_shares_ += new_shares;
+        value_ += money_in;
         return new_shares;
     }
 
