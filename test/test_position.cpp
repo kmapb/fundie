@@ -46,11 +46,11 @@ TEST(Position, ValuationDilution) {
 
 TEST(Round, ProRata) {
     Round r = { 20e6, 25e6 };
-    EXPECT_DOUBLE_EQ(r.preMV, 20e6);
-    EXPECT_DOUBLE_EQ(r.newMoney(), 5e6);
-    EXPECT_DOUBLE_EQ(computeProRata(r, 0.1), 5e5);
-    EXPECT_DOUBLE_EQ(r.newMoney(), 5.5e6);
-    EXPECT_DOUBLE_EQ(r.preMV, 19.5e6);
+    EXPECT_DOUBLE_EQ(r.prev_mv, 20e6);
+    EXPECT_DOUBLE_EQ(r.new_money(), 5e6);
+    EXPECT_DOUBLE_EQ(r.compute_pro_rata(0.1), 5e5);
+    EXPECT_DOUBLE_EQ(r.new_money(), 5.5e6);
+    EXPECT_DOUBLE_EQ(r.prev_mv, 19.5e6);
 }
 
 TEST(Portfolio, Basics) {

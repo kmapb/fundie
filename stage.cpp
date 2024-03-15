@@ -1,4 +1,5 @@
 #include "stage.h"
+#include "round.h"
 
 constexpr double M = 1e6;
 constexpr double B = 1e9;
@@ -30,5 +31,16 @@ Stage::traverse_stage(Asset& asset) {
     asset.accept_new_money(round_size);
     asset.reserve_option_pool(option_pool);
     return result;
+}
+
+Stage::Result
+Stage::pro_rata(Asset& asset, Position& position, currency_t& out_currency, double pro_rata_rate) {
+    auto prev_ownership = position.ownership();
+    auto target_ownership = prev_ownership * pro_rata_rate;
+
+    Round round { asset.value(), post_money_valuation };
+    out_currency = round.compute_pro_rata(prev_ownership, target_ownership);
+
+    return traverse_stage(asset);
 }
 

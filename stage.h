@@ -24,6 +24,7 @@ struct Stage {
     } Result;
 
     Result traverse_stage(Asset& asset);
+    Result pro_rata(Asset& asset, Position& position, currency_t& out_currency, double pro_rata_rate = 1.0);
 };
 
 extern const int num_stages;

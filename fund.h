@@ -4,7 +4,6 @@
 
 #include "position.h"
 
-
 struct Fund {
     Fund(double lp_commitments, double gp_commitments, double carry )
         : lp_commitments_(lp_commitments), gp_commitments_(gp_commitments), carry_(carry) {}
