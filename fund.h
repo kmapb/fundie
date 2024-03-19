@@ -5,7 +5,7 @@
 #include "position.h"
 
 struct Fund {
-    Fund(double lp_commitments, double gp_commitments, double carry )
+    Fund(double lp_commitments, double gp_commitments, double carry=0.2, double fees=0.2)
         : lp_commitments_(lp_commitments), gp_commitments_(gp_commitments), carry_(carry), deployed_(0.0) {}
 
     double fund_size() const {
@@ -36,6 +36,9 @@ struct Fund {
         auto& p = get_position(a);
         a.accept_new_money(value);
         deployed_ += value;
+
+        assert(get_position(a).ownership() <= 1.0);
+        assert(get_position(a).cost() >= value);
     }
 
   protected:
@@ -43,6 +46,7 @@ struct Fund {
     double lp_commitments_;
     double gp_commitments_;
     double carry_;
+    double fees_;
     double deployed_;
     PositionMap positions_;
 };

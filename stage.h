@@ -2,6 +2,9 @@
 #pragma once
 
 #include <cstdint>
+#include <unordered_map>
+#include <string>
+
 #include "position.h"
 
 typedef double currency_t;
@@ -29,4 +32,5 @@ struct Stage {
 
 extern const int num_stages;
 extern const Stage stages[];
-
+typedef std::unordered_map<std::string, const Stage&> StageMap;
+const StageMap& get_stage_map();

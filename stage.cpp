@@ -16,6 +16,20 @@ const Stage stages[] = {
 
 const int num_stages = sizeof(stages) / sizeof(Stage);
 
+
+const StageMap& get_stage_map() {
+    static StageMap stageMap;
+    if (stageMap.size() == num_stages) return stageMap;
+    assert(stageMap.size() == 0);
+
+    for (const auto& stage: stages) {
+        std::string sn { stage.name };
+        stageMap.emplace(sn, stage);
+    }
+    assert(stageMap.size() == num_stages);
+    return stageMap;
+}
+
 Stage::Result
 Stage::traverse_stage(Asset& asset) {
     auto result = Result::CONTINUE;

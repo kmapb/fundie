@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <vector>
 #include <numeric>
+#include <cassert>
 
 #include "asset.h"
 
@@ -51,6 +52,10 @@ struct Position {
         }
         if (ownership() <= 0.0 || ownership() >= 1.0) {
             throw std::runtime_error("impossible ownership");
+        }
+        for (const auto& h: holdings) {
+            assert(h.shares > 0);
+            assert(h.cost > 0);
         }
     }
 

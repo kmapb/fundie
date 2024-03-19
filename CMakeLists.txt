@@ -23,3 +23,4 @@ endfunction()
 
 add_gtest_executable(test_position test/test_position.cpp)
 add_gtest_executable(test_stage test/test_stage.cpp)
+add_gtest_executable(test_fund test/test_fund.cpp)
