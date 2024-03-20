@@ -35,7 +35,8 @@ Stage::traverse_stage(Asset& asset) {
     auto result = Result::CONTINUE;
     auto dice = double(random()) / RAND_MAX;
     if (dice < p_write_off) {
-        return Result::CONTINUE;
+        asset.set_value(0.0);
+        return Result::DIE;
     }
     dice -= p_write_off;
     if (dice < p_exit) {

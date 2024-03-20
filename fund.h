@@ -5,8 +5,8 @@
 #include "position.h"
 
 struct Fund {
-    Fund(double lp_commitments, double gp_commitments, double carry=0.2, double fees=0.2)
-        : lp_commitments_(lp_commitments), gp_commitments_(gp_commitments), carry_(carry), deployed_(0.0) {}
+    Fund(double lp_commitments, double gp_commitments, double carry=0.2, double fees=0.02)
+        : lp_commitments_(lp_commitments), gp_commitments_(gp_commitments), carry_(carry), deployed_(0.0), distributed_(0.0) {}
 
     double fund_size() const {
         return lp_commitments_ + gp_commitments_;
@@ -14,6 +14,10 @@ struct Fund {
 
     double deployed() const {
         return deployed_;
+    }
+
+    double distributed() const {
+        return distributed_;
     }
 
     double dry_powder() const {
@@ -31,10 +35,11 @@ struct Fund {
         return ret->second;
     }
 
-    void deploy(Asset& a, const double value) {
+    void deploy(Asset& a, CalTime ymd, const double value) {
         assert(value <= dry_powder());
         auto& p = get_position(a);
-        a.accept_new_money(value);
+        auto shares = a.accept_new_money(value);
+        p.buy(ymd, value, shares);
         deployed_ += value;
 
         assert(get_position(a).ownership() <= 1.0);
@@ -48,5 +53,6 @@ struct Fund {
     double carry_;
     double fees_;
     double deployed_;
+    double distributed_;
     PositionMap positions_;
 };

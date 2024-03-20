@@ -2,6 +2,7 @@
 
 #include <string>
 #include <cstdint>
+#include <unordered_map>
 
 class Asset {
     std::string id_;
@@ -16,7 +17,7 @@ public:
     void set_value(double new_value) { value_ = new_value; }
 
     uint64_t accept_new_money(double money_in) {
-        uint64_t new_shares = money_in / value_;
+        uint64_t new_shares = (money_in / value_) * outstanding_shares_;
         outstanding_shares_ += new_shares;
         value_ += money_in;
         return new_shares;
@@ -29,3 +30,5 @@ public:
     }
     uint64_t outstanding_shares() const { return outstanding_shares_; }
 };
+
+typedef std::unordered_map<std::string, Asset> AssetMap;

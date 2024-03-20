@@ -7,7 +7,7 @@ project(
    VERSION 1.0
    LANGUAGES CXX)
 
-add_library(fund_logic stage.cpp round.cpp)
+add_library(fund_logic stage.cpp round.cpp position.cpp)
 add_executable(fundie main.cpp)
 target_link_libraries(fundie fund_logic pthread)
 

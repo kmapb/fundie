@@ -9,6 +9,7 @@
 #include "asset.h"
 
 typedef std::chrono::time_point<std::chrono::system_clock> CalTime;
+
 static inline CalTime YMD(int year, int month, int day) {
     std::tm tm = {};
     tm.tm_year = year;
@@ -23,7 +24,7 @@ static inline CalTime YMD(int year, int month, int day) {
     }
     return std::chrono::system_clock::from_time_t(time);
 }
-
+extern CalTime CALTIME_EPOCH;
 
 struct Position {
     Position(Asset &asset)
