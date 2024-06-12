@@ -1,6 +1,6 @@
 #include "fund.h"
 
-Position &Fund::get_position(Asset &a);
+Position &Fund::get_position(Asset &a)
 {
     auto p = positions_.find(a.name());
     if (p != positions_.end()) {
