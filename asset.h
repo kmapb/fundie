@@ -11,7 +11,7 @@ class Asset {
 
 public:
     Asset(const char* id, double value) : id_(id), value_(value), outstanding_shares_(10 * 1000 * 1000) {}
-    const double value() const { return value_; }
+    double value() const { return value_; }
     const std::string& name() const { return id_; }
 
     void set_value(double new_value) { value_ = new_value; }

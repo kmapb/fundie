@@ -6,7 +6,7 @@
 
 struct Fund {
     Fund(double lp_commitments, double gp_commitments, double carry=0.2, double fees=0.02)
-        : lp_commitments_(lp_commitments), gp_commitments_(gp_commitments), carry_(carry), deployed_(0.0), distributed_(0.0) {}
+        : lp_commitments_(lp_commitments), gp_commitments_(gp_commitments), carry_(carry), fees_(fees), deployed_(0.0), distributed_(0.0) {}
 
     double fund_size() const {
         return lp_commitments_ + gp_commitments_;
@@ -29,7 +29,7 @@ struct Fund {
         if (p != positions_.end()) {
             return p->second;
         }
-        positions_.emplace(a.name(), Position(a)).second;
+        positions_.emplace(a.name(), Position(a));
         auto ret = positions_.find(a.name());
         assert(ret != positions_.end());
         return ret->second;
