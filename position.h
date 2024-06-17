@@ -2,6 +2,7 @@
 #include <chrono>
 #include <ctime>
 #include <stdexcept>
+#include <memory>
 #include <vector>
 #include <numeric>
 #include <cassert>
@@ -26,25 +27,72 @@ static inline CalTime YMD(int year, int month, int day) {
 }
 extern CalTime CALTIME_EPOCH;
 
+/**
+ * @brief a Holding is an abstract claim on equity; could be shares, but could
+ * also be a convertible, warrant, SAFE, etc.
+ */
+struct Holding {
+    CalTime acquired;
+    double cost;
+    Holding(CalTime acquired, double cost) : acquired(acquired), cost(cost) {
+    }
+    virtual double value() const = 0;
+    virtual double ownership() const = 0;
+};
+
+struct ShareHolding : public Holding {
+    uint64_t shares;
+    const Asset &asset;
+    ShareHolding(CalTime ct, double cost, uint64_t shares, const Asset &asset)
+        : Holding(ct, cost), shares(shares), asset(asset) {
+    }
+    virtual double value() const {
+        return (double(shares) / asset.outstanding_shares()) * asset.value();
+    }
+    virtual double ownership() const {
+        return (1.0 * shares) / asset.outstanding_shares();
+    }
+};
+
+struct PostMoneySAFE : public Holding {
+    PostMoneySAFE(CalTime ct, double cost, double post_money_cap = -1.0)
+        : Holding(ct, cost), post_money_cap(post_money_cap) {
+    }
+    double post_money_cap;
+    virtual double value() const {
+        return cost;
+    }
+    virtual double ownership() const {
+        return cost / post_money_cap;
+    }
+};
+
 struct Position {
-    Position(Asset &asset)
-        : asset(asset),
-          holdings({})
-    {
+  protected:
+    Asset &asset;
+    typedef std::unique_ptr<Holding> HoldingPtr;
+    std::vector<HoldingPtr> holdings;
+
+  public:
+    Position(Asset &asset) : asset(asset) {
         validate();
     }
 
     double ownership() const {
-        auto outstanding = asset.outstanding_shares();
         return std::accumulate(holdings.begin(), holdings.end(), 0.0,
-            [outstanding](double acc, const Holding& h) { return acc + double(h.shares) / outstanding; });
+                               [](double acc, const HoldingPtr &h) {
+                                   return acc + h->ownership();
+                               });
     }
     double cost() const {
-        return std::accumulate(holdings.begin(), holdings.end(), 0.0,
-            [](double acc, const Holding& h) { return acc + h.cost; });
+        return std::accumulate(
+            holdings.begin(), holdings.end(), 0.0,
+            [](double acc, const HoldingPtr &h) { return acc + h->cost; });
     }
     double value() const {
-        return asset.value() * ownership();
+        return std::accumulate(
+            holdings.begin(), holdings.end(), 0.0,
+            [](double acc, const HoldingPtr &h) { return acc + h->value(); });
     }
 
     void validate() const {
@@ -54,24 +102,23 @@ struct Position {
         if (ownership() <= 0.0 || ownership() >= 1.0) {
             throw std::runtime_error("impossible ownership");
         }
-        for (const auto& h: holdings) {
-            assert(h.shares > 0);
-            assert(h.cost > 0);
+        for (const auto &h : holdings) {
+            assert(h->ownership() > 0);
+            assert(h->ownership() < 1.0);
+            assert(h->cost > 0);
         }
     }
 
     void buy(CalTime ymd, double cost, uint64_t shares) {
-        holdings.emplace_back(ymd, cost, shares);
+        auto *h = new ShareHolding(ymd, cost, shares, asset);
+        holdings.emplace_back(h);
         validate();
     }
 
-  protected:
-    Asset& asset;
-    struct Holding {
-        Holding(CalTime ct, double cost, uint64_t shares) : acquired(ct), cost(cost), shares(shares) { }
-        CalTime acquired;
-        double cost;
-        uint64_t shares;
-    };
-    std::vector<Holding> holdings;
+    void post_money_safe(CalTime ymd, double cost,
+                         double post_money_valuation) {
+        auto *s = new PostMoneySAFE(ymd, cost, post_money_valuation);
+        holdings.emplace_back(s);
+        validate();
+    }
 };

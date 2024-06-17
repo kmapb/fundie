@@ -44,6 +44,14 @@ TEST(Position, ValuationDilution) {
     EXPECT_DOUBLE_EQ(p1.value(), expected_new_value);
 }
 
+TEST(Position, SAFEs) {
+    Asset a1 { "AAPL", 1e9 };
+    Position p1 { a1};
+    p1.post_money_safe(YMD(1982, 1, 17), 1e7, 1e10);
+    EXPECT_DOUBLE_EQ(p1.value(), 1e7);
+    EXPECT_DOUBLE_EQ(p1.ownership(), 1e-3);
+}
+
 TEST(Round, ProRata) {
     Round r = { 20e6, 25e6 };
     EXPECT_DOUBLE_EQ(r.prev_mv, 20e6);
@@ -69,4 +77,3 @@ TEST(Portfolio, Basics) {
     auto& pos2 = f1.get_position(a2);
     pos2.buy(YMD(2024, 4, 1), 1e6, pct_of_shares(1));
 }
-
