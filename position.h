@@ -36,6 +36,7 @@ struct Holding {
     double cost;
     Holding(CalTime acquired, double cost) : acquired(acquired), cost(cost) {
     }
+    virtual ~Holding() { }
     virtual double value() const = 0;
     virtual double ownership() const = 0;
 };
