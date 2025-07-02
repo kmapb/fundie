@@ -3,7 +3,7 @@ project('fundie', 'cpp',
 )
 libfundlogic=library('libfundlogic', 'stage.cpp', 'round.cpp', 'position.cpp', 'fund.cpp')
 
-gtest_dep = dependency('gtest', main: true)
+gtest_dep = dependency('gtest', main: true, fallback: ['gtest', 'gtest_main_dep'])
 
 test_position_exe = executable('test_position', 'test/test_position.cpp',
     link_with: libfundlogic,
