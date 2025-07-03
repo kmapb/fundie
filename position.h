@@ -8,6 +8,7 @@
 #include <cassert>
 
 #include "asset.h"
+#include "types.h"
 
 typedef std::chrono::time_point<std::chrono::system_clock> CalTime;
 
@@ -33,8 +34,8 @@ extern CalTime CALTIME_EPOCH;
  */
 struct Holding {
     CalTime acquired;
-    double cost;
-    Holding(CalTime acquired, double cost) : acquired(acquired), cost(cost) {
+    currency_t cost;
+    Holding(CalTime acquired, currency_t cost) : acquired(acquired), cost(cost) {
     }
     virtual ~Holding() { }
     virtual double value() const = 0;
@@ -44,7 +45,7 @@ struct Holding {
 struct ShareHolding : public Holding {
     uint64_t shares;
     const Asset &asset;
-    ShareHolding(CalTime ct, double cost, uint64_t shares, const Asset &asset)
+    ShareHolding(CalTime ct, currency_t cost, uint64_t shares, const Asset &asset)
         : Holding(ct, cost), shares(shares), asset(asset) {
     }
     virtual double value() const {
@@ -56,10 +57,10 @@ struct ShareHolding : public Holding {
 };
 
 struct PostMoneySAFE : public Holding {
-    PostMoneySAFE(CalTime ct, double cost, double post_money_cap = -1.0)
+    PostMoneySAFE(CalTime ct, currency_t cost, currency_t post_money_cap = -1.0)
         : Holding(ct, cost), post_money_cap(post_money_cap) {
     }
-    double post_money_cap;
+    currency_t post_money_cap;
     virtual double value() const {
         return cost;
     }
@@ -79,21 +80,25 @@ struct Position {
         validate();
     }
 
+    Asset& underlying_asset() {
+        return asset;
+    }
+
     double ownership() const {
         return std::accumulate(holdings.begin(), holdings.end(), 0.0,
-                               [](double acc, const HoldingPtr &h) {
+                               [](pct_t acc, const HoldingPtr &h) {
                                    return acc + h->ownership();
                                });
     }
     double cost() const {
         return std::accumulate(
             holdings.begin(), holdings.end(), 0.0,
-            [](double acc, const HoldingPtr &h) { return acc + h->cost; });
+            [](currency_t acc, const HoldingPtr &h) { return acc + h->cost; });
     }
     double value() const {
         return std::accumulate(
             holdings.begin(), holdings.end(), 0.0,
-            [](double acc, const HoldingPtr &h) { return acc + h->value(); });
+            [](currency_t acc, const HoldingPtr &h) { return acc + h->value(); });
     }
 
     void validate() const {
@@ -110,14 +115,14 @@ struct Position {
         }
     }
 
-    void buy(CalTime ymd, double cost, uint64_t shares) {
+    void buy(CalTime ymd, currency_t cost, uint64_t shares) {
         auto *h = new ShareHolding(ymd, cost, shares, asset);
         holdings.emplace_back(h);
         validate();
     }
 
-    void post_money_safe(CalTime ymd, double cost,
-                         double post_money_valuation) {
+    void post_money_safe(CalTime ymd, currency_t cost,
+                         currency_t post_money_valuation) {
         auto *s = new PostMoneySAFE(ymd, cost, post_money_valuation);
         holdings.emplace_back(s);
         validate();

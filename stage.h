@@ -5,16 +5,12 @@
 #include <unordered_map>
 #include <string>
 
+#include "types.h"
 #include "position.h"
-
-typedef double currency_t;
-typedef double pct_t;
-typedef double prob_t;
 
 struct Stage {
     const char* name;
-    const currency_t round_size;
-    const currency_t post_money_valuation;
+    const pct_t next_stage_factor;
     const pct_t option_pool;
 
     // State transition probabiblities
@@ -26,8 +22,7 @@ struct Stage {
         EXIT,
     } Result;
 
-    Result traverse_stage(Asset& asset);
-    Result pro_rata(Asset& asset, Position& position, currency_t& out_currency, double pro_rata_rate = 1.0);
+    Result traverse_stage(Asset& asset) const;
 };
 
 extern const int num_stages;
