@@ -82,14 +82,14 @@ int main(int argc, char** argv) {
 
         auto& pos = pb2.get_position(asset);
         assert(&pos.underlying_asset() == &asset);
-        dbg(harness, ("Company: %s\n", inv.company_name.c_str()));
-        dbg(harness, ("  ownership: %g\n", pos.ownership()));
-        dbg(harness, ("  company valuation: %g\n", asset.value()));
+        dbg(harness, ("Company            : %s\n", inv.company_name.c_str()));
+        dbg(harness, ("  ownership        : %3g%%\n", 100.0 * pos.ownership()));
+        dbg(harness, ("  company valuation: %5.2gM\n", asset.value() / 1e6));
     }
 
     pb2.run_to_completion();
     printf("distributions: $%5.2gM\n", pb2.distributed() / 1e6);
-    printf("    to LPs: $%5.2gM\n", pb2.distributed_to_lps() / 1e6);
-    printf("    to GPs: $%5.2g\n", pb2.distributed_to_gps() / 1e6);
+    printf("    to LPs   : $%5.2gM\n", pb2.distributed_to_lps() / 1e6);
+    printf("    to GPs   : $%5.2g\n", pb2.distributed_to_gps() / 1e6);
     printf("cash returned: $%5.2g\n", pb2.dry_powder() / 1e6);
 }
