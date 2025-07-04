@@ -83,6 +83,10 @@ struct Position {
     Asset& underlying_asset() {
         return asset;
     }
+    
+    const Asset& underlying_asset() const {
+        return asset;
+    }
 
     double ownership() const {
         return std::accumulate(holdings.begin(), holdings.end(), 0.0,

@@ -14,4 +14,10 @@ int main(int, char**) {
     auto& pos = pb2.get_position(orbit);
     printf("ownership: %g\n", pos.ownership());
     printf("company valuation: %g\n", orbit.value());
+    
+    pb2.run_to_completion();
+    printf("distributions: %g\n", pb2.distributed());
+    printf("    to LPs: %g\n", pb2.distributed_to_lps());
+    printf("    to GPs: %g\n", pb2.distributed_to_gps());
+    printf("cash returned: %g\n", pb2.dry_powder());
 }

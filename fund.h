@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 
 #include "position.h"
@@ -17,8 +18,9 @@ struct Fund {
         , fees_paid_(0.0)
         , deployed_(0.0)
         , distributed_to_lps_(0.0)
-        , distributed_to_gps_(0.0) {
-    }
+        , distributed_to_gps_(0.0)
+        , stage_index_(0)
+    { }
 
     double fund_size() const {
         return lp_commitments_ + gp_commitments_;
@@ -55,13 +57,14 @@ struct Fund {
     Position &get_position(Asset &a);
     void deploy(Asset &a, CalTime ymd, const double value);
     
-    // See which companies move forward
     void tick();
+    void run_to_completion();
 
   protected:
     void distribute(const Position& pos);
 
     typedef std::unordered_map<std::string, Position> PositionMap;
+    typedef std::unordered_set<std::string> PositionSet;
     double lp_commitments_;
     double gp_commitments_;
     double carry_;
@@ -73,4 +76,6 @@ struct Fund {
     double distributed_to_lps_;
     double distributed_to_gps_;
     PositionMap positions_;
+    PositionSet active_positions_;
+    int stage_index_;
 };

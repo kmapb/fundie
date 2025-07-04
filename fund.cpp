@@ -21,18 +21,20 @@ void Fund::deploy(Asset &a, CalTime ymd, const double value) {
     auto shares = a.accept_new_money(value);
     p.buy(ymd, value, shares);
     deployed_ += value;
+    active_positions_.insert(a.name());
 
     assert(get_position(a).ownership() <= 1.0);
     assert(get_position(a).cost() >= value);
 }
 
 void Fund::distribute(const Position& pos) {
+    assert(active_positions_.find(pos.underlying_asset().name()) != active_positions_.end());
     auto proceeds = pos.value();
+    // Some helpers
     auto distribute_to = [&](double& dest, double amount) {
         dest += amount;
         proceeds -= amount;
     };
-
     auto distribute_lps = [&](double amount) {
         assert(amount > 0.0);
         distribute_to(distributed_to_lps_, amount);
@@ -55,14 +57,16 @@ void Fund::distribute(const Position& pos) {
         distribute_pro_rata(regular_returns);
         distribute_to(carry_paid_, carry_interest);
     };
+    active_positions_.erase(pos.underlying_asset().name());
+
 
     // We're using the American waterfall system here. Prior to the carry
-    // hurdle, 
+    // hurdle, pro rata to LPs and GPs.
     auto distributed_pre = distributed() / commitments();
     if (distributed_pre < carry_hurdle_) {
         auto remainder_to_hurdle = proceeds * carry_hurdle_ - distributed();
         assert(remainder_to_hurdle > 0.0);
-        distribute_lps(std::min(proceeds, remainder_to_hurdle));
+        distribute_pro_rata(std::min(proceeds, remainder_to_hurdle));
     }
     if (proceeds < 1.0) return;
     
@@ -71,11 +75,35 @@ void Fund::distribute(const Position& pos) {
     assert(proceeds < 1.0); // allow some rounding slop
 }
 
-// Run the fund for, like, a year or so.
 void Fund::tick() {
+    // Run each position one step forward. Do pro rata if we're not
+    // yet fully deployed. Pay fees.
     fees_paid_ += fees_ * commitments();
-    for (auto& pairs: positions_) {
-        auto &pos = pairs.second;
+    for (auto posname: active_positions_) {
+        auto pairs = positions_.find(posname);
+        auto& pos = pairs->second;
+        auto& a = pos.underlying_asset();
+        auto result = stages[stage_index_].traverse_stage(a);
+        if (result == Stage::EXIT) {
+            debug("company exited: %s for %g", a.name().c_str(), a.value());
+            distribute(pos);
+            continue;
+        }
+        if (result == Stage::DIE) {
+            debug("company died: %s", a.name().c_str());
+            continue;
+        }
+        assert(result == Stage::CONTINUE);
+    }
+    stage_index_++;
+    assert(stage_index_ <= num_stages);
+}
+
+// Run the fund to completion
+void Fund::run_to_completion() {
+    for (auto& posname: active_positions_) {
+        auto pairs = positions_.find(posname);
+        auto& pos = pairs->second;
         auto& a = pos.underlying_asset();
         for (int si = 0; si < num_stages; si++) {
             auto result = stages[si].traverse_stage(a);
