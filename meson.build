@@ -1,7 +1,7 @@
 project('fundie', 'cpp',
     default_options: ['warning_level=3', 'cpp_std=c++20'],
 )
-libfundlogic=library('libfundlogic', 'stage.cpp', 'round.cpp', 'position.cpp', 'fund.cpp')
+libfundlogic=library('libfundlogic', 'stage.cpp', 'round.cpp', 'position.cpp', 'fund.cpp', 'debug.cpp')
 
 gtest_dep = dependency('gtest', main: true, fallback: ['gtest', 'gtest_main_dep'])
 yaml_cpp_dep = dependency('yaml-cpp')

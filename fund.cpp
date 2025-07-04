@@ -28,6 +28,7 @@ void Fund::deploy(Asset &a, CalTime ymd, const double value) {
 }
 
 void Fund::distribute(const Position& pos) {
+    dbg(fund, ("distributing %g from %s\n", pos.value(), pos.underlying_asset().name().c_str()));
     assert(active_positions_.find(pos.underlying_asset().name()) != active_positions_.end());
     auto proceeds = pos.value();
     // Some helpers
@@ -57,7 +58,6 @@ void Fund::distribute(const Position& pos) {
         distribute_pro_rata(regular_returns);
         distribute_to(carry_paid_, carry_interest);
     };
-    active_positions_.erase(pos.underlying_asset().name());
 
 
     // We're using the American waterfall system here. Prior to the carry
@@ -80,20 +80,26 @@ void Fund::tick() {
     // yet fully deployed. Pay fees.
     fees_paid_ += fees_ * commitments();
     for (auto posname: active_positions_) {
+        dbg(fund, ("tick: %s\n", posname.c_str()));
         auto pairs = positions_.find(posname);
         auto& pos = pairs->second;
         auto& a = pos.underlying_asset();
+        assert(a.name() == posname);
         auto result = stages[stage_index_].traverse_stage(a);
         if (result == Stage::EXIT) {
-            debug("company exited: %s for %g", a.name().c_str(), a.value());
+            dbg(fund, ("company exited: %s for %g\n", a.name().c_str(), a.value()));
             distribute(pos);
+            active_positions_.erase(posname);
             continue;
         }
         if (result == Stage::DIE) {
-            debug("company died: %s", a.name().c_str());
+            dbg(fund, ("company died: %s\n", a.name().c_str()));
+            active_positions_.erase(posname);
+            assert(active_positions_.find(posname) == active_positions_.end());
             continue;
         }
         assert(result == Stage::CONTINUE);
+        dbg(fund, ("company continues: %s for %g\n", a.name().c_str(), a.value()));
     }
     stage_index_++;
     assert(stage_index_ <= num_stages);
@@ -101,23 +107,10 @@ void Fund::tick() {
 
 // Run the fund to completion
 void Fund::run_to_completion() {
-    for (auto& posname: active_positions_) {
-        auto pairs = positions_.find(posname);
-        auto& pos = pairs->second;
-        auto& a = pos.underlying_asset();
-        for (int si = 0; si < num_stages; si++) {
-            auto result = stages[si].traverse_stage(a);
-            if (result == Stage::EXIT) {
-                debug("company exited: %s for %g", a.name().c_str(), a.value());
-                distribute(pos);
-                // TODO: remove from positions_ ?
-                break;
-            }
-            if (result == Stage::DIE) {
-                debug("company died: %s", a.name().c_str());
-                break;
-            }
-            assert(result == Stage::CONTINUE);
-        }
+    while (active_positions_.size() > 0) {
+        // Eh.
+        dbg(fund, ("stage: %s active positions: %zd\n", stages[stage_index_].name, active_positions_.size()));
+        tick();
+        stage_index_ = std::min(stage_index_ + 1, num_stages - 1);
     }
 }
