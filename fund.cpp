@@ -64,7 +64,7 @@ void Fund::distribute(const Position& pos) {
     // hurdle, pro rata to LPs and GPs.
     auto distributed_pre = distributed() / commitments();
     if (distributed_pre < carry_hurdle_) {
-        auto remainder_to_hurdle = proceeds * carry_hurdle_ - distributed();
+        auto remainder_to_hurdle = fund_size() * carry_hurdle_ - distributed();
         assert(remainder_to_hurdle > 0.0);
         distribute_pro_rata(std::min(proceeds, remainder_to_hurdle));
     }
