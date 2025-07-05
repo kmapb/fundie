@@ -3,16 +3,17 @@
 
 constexpr double M = 1e6;
 constexpr double B = 1e9;
+
 const Stage stages[] = {
-    //Name          Growth    options p(die)  p(exit)
-    { "Seed",       2.25,     0.2,    0.35,   0.1 },
-    { "Series A",   2.75,     0.15,   0.30,   0.15 },
-    { "Series B",   2.5,      0.1,    0.23,   0.175 },
-    { "Series C",   2.75,     0.25,   0.23,   0.2},
-    { "Series D",   2.75,     0.04,   0.20,   0.3 },
-    { "Series E",   2.25,     0,      0.15,   0.35 },
-    { "Series F",   3.00,     0,      0.1,    0.5},
-    { "IPO",        3.00,     0,      0.00,   1.0 },
+    //Name          Growth    options dilution p(die)  p(exit)
+    { "Seed",       2.25,     0.2,    0.2,     0.35,   0.1 },
+    { "Series A",   2.75,     0.15,   0.2,     0.30,   0.15 },
+    { "Series B",   2.5,      0.1,    0.2,     0.23,   0.175 },
+    { "Series C",   2.75,     0.25,   0.2,     0.23,   0.2},
+    { "Series D",   2.75,     0.04,   0.2,     0.20,   0.3 },
+    { "Series E",   2.25,     0,      0.2,     0.15,   0.35 },
+    { "Series F",   3.00,     0,      0.2,     0.1,    0.5},
+    { "IPO",        3.00,     0,      0.2,     0.00,   1.0 },
 };
 
 const int num_stages = sizeof(stages) / sizeof(Stage);

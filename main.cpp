@@ -1,6 +1,8 @@
 #include <cstdio>
 #include <yaml-cpp/yaml.h>
 #include <vector>
+#include <getopt.h>
+#include <cstdlib>
 #include "stage.h"
 #include "fund.h"
 #include "debug.h"
@@ -53,18 +55,8 @@ FundConfig load_config(const std::string& filename) {
     return fund_config;
 }
 
-int main(int argc, char** argv) {
-    printf("yarr ...\n");
-    for (int i = 0; i < num_stages; i++) {
-        printf("s[%s]: %g\n", stages[i].name, stages[i].p_exit);
-    }
-
-    // Load configuration from YAML file
-    const char* fname = "data/config.yaml";
-    if (argc > 1) {
-       fname = argv[1]; 
-    }
-    FundConfig config = load_config(fname);
+void run_single_simulation(const FundConfig& config, int simulation_num) {
+    printf("\n=== Simulation %d ===\n", simulation_num);
 
     // Create fund with loaded parameters
     Fund pb2 { config.lp_commitments, config.gp_commitments, config.carry, config.carry_hurdle, config.fees };
@@ -84,12 +76,82 @@ int main(int argc, char** argv) {
         assert(&pos.underlying_asset() == &asset);
         dbg(harness, ("Company            : %s\n", inv.company_name.c_str()));
         dbg(harness, ("  ownership        : %3g%%\n", 100.0 * pos.ownership()));
-        dbg(harness, ("  company valuation: %5.2gM\n", asset.value() / 1e6));
+        dbg(harness, ("  company valuation: $%.2gM\n", asset.value() / 1e6));
     }
 
     pb2.run_to_completion();
-    printf("distributions: $%5.2gM\n", pb2.distributed() / 1e6);
-    printf("    to LPs   : $%5.2gM\n", pb2.distributed_to_lps() / 1e6);
-    printf("    to GPs   : $%5.2g\n", pb2.distributed_to_gps() / 1e6);
-    printf("cash returned: $%5.2g\n", pb2.dry_powder() / 1e6);
+    printf("distributions: $%'.2fM\n", pb2.distributed() / 1e6);
+    printf("    to LPs   : $%'.2fM\n", pb2.distributed_to_lps() / 1e6);
+    printf("    to GPs   : $%'.2fM\n", pb2.distributed_to_gps() / 1e6);
+    printf("    carried  : $%'.2fM\n", pb2.carried_interest() / 1e6);
+    printf("    fees     : $%'.2fM\n", pb2.fees_paid() / 1e6);
+    printf("cash returned: $%'.2fM\n", pb2.dry_powder() / 1e6);
+}
+
+void print_usage(const char* program_name) {
+    printf("Usage: %s [OPTIONS] [config_file]\n", program_name);
+    printf("Options:\n");
+    printf("  -n, --num-runs=N    Number of simulations to run (default: 1)\n");
+    printf("  -h, --help          Show this help message\n");
+    printf("\n");
+    printf("If config_file is not specified, defaults to 'data/config.yaml'\n");
+}
+
+int main(int argc, char** argv) {
+    int num_runs = 1;
+    const char* config_file = "data/config.yaml";
+
+    // Parse command line arguments
+    static struct option long_options[] = {
+        {"num-runs", required_argument, 0, 'n'},
+        {"help", no_argument, 0, 'h'},
+        {0, 0, 0, 0}
+    };
+
+    int opt;
+    int option_index = 0;
+    while ((opt = getopt_long(argc, argv, "n:h", long_options, &option_index)) != -1) {
+        switch (opt) {
+            case 'n':
+                num_runs = atoi(optarg);
+                if (num_runs <= 0) {
+                    fprintf(stderr, "Error: Number of runs must be positive\n");
+                    return 1;
+                }
+                break;
+            case 'h':
+                print_usage(argv[0]);
+                return 0;
+            default:
+                print_usage(argv[0]);
+                return 1;
+        }
+    }
+
+    // Check for config file argument
+    if (optind < argc) {
+        config_file = argv[optind];
+    }
+
+    printf("yarr ...\n");
+    for (int i = 0; i < num_stages; i++) {
+        printf("s[%s]: %g\n", stages[i].name, stages[i].p_exit);
+    }
+
+    printf("\nRunning %d simulation%s with config: %s\n",
+           num_runs, (num_runs == 1) ? "" : "s", config_file);
+
+    // Load configuration from YAML file
+    FundConfig config = load_config(config_file);
+
+    // Run simulations
+    for (int i = 1; i <= num_runs; i++) {
+        run_single_simulation(config, i);
+    }
+
+    if (num_runs > 1) {
+        printf("\n=== Completed %d simulations ===\n", num_runs);
+    }
+
+    return 0;
 }

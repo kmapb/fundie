@@ -75,31 +75,57 @@ void Fund::distribute(const Position& pos) {
     assert(proceeds < 1.0); // allow some rounding slop
 }
 
+Stage::Result Fund::tick_one_position(CalTime now, const std::string& posname) {
+    dbg(fund, ("tick: %s\n", posname.c_str()));
+    auto pairs = positions_.find(posname);
+    auto& pos = pairs->second;
+    auto& a = pos.underlying_asset();
+    assert(a.name() == posname);
+    auto old_ownership = pos.ownership();
+    const auto& stage = stages[stage_index_];
+    auto result = stage.traverse_stage(a);
+
+    if (result == Stage::EXIT) {
+	    dbg(fund, ("company exited: %s for %g\n", a.name().c_str(), a.value()));
+	    distribute(pos);
+	    return result;
+    }
+
+    if (result == Stage::DIE) {
+	    dbg(fund, ("company died: %s\n", a.name().c_str()));
+	    return result;
+    }
+
+    assert(result == Stage::CONTINUE);
+    dbg(fund, ("company continues: %s for %g\n", a.name().c_str(), a.value()));
+    // Reserve strategy! If we have dry powder, deploy more money now.
+    if (dry_powder() > 0.0) {
+        auto new_dollars_in = a.value() * old_ownership * stage.dilution;
+        auto to_deploy = std::min(dry_powder(), new_dollars_in);
+        deploy(a, now, to_deploy);
+    } 
+    return result;
+}
+
 void Fund::tick() {
     // Run each position one step forward. Do pro rata if we're not
     // yet fully deployed. Pay fees.
-    fees_paid_ += fees_ * commitments();
-    for (auto posname: active_positions_) {
-        dbg(fund, ("tick: %s\n", posname.c_str()));
-        auto pairs = positions_.find(posname);
-        auto& pos = pairs->second;
-        auto& a = pos.underlying_asset();
-        assert(a.name() == posname);
-        auto result = stages[stage_index_].traverse_stage(a);
-        if (result == Stage::EXIT) {
-            dbg(fund, ("company exited: %s for %g\n", a.name().c_str(), a.value()));
-            distribute(pos);
-            active_positions_.erase(posname);
-            continue;
+    if (dry_powder() > 0) {
+        auto to_pay = std::min(fees_ * commitments(), dry_powder());
+        fees_paid_ += to_pay;
+    }
+    std::vector<std::string> to_erase {};
+    auto year = 2025 + stage_index_;
+    auto now = YMD(year, 1, 1);
+
+    for (const auto& posname: active_positions_) {
+        auto result = tick_one_position(now, posname);
+        if (result != Stage::CONTINUE) {
+            to_erase.push_back(posname);
         }
-        if (result == Stage::DIE) {
-            dbg(fund, ("company died: %s\n", a.name().c_str()));
-            active_positions_.erase(posname);
-            assert(active_positions_.find(posname) == active_positions_.end());
-            continue;
-        }
-        assert(result == Stage::CONTINUE);
-        dbg(fund, ("company continues: %s for %g\n", a.name().c_str(), a.value()));
+    }
+    for (const auto& name: to_erase) {
+        active_positions_.erase(name);
     }
     stage_index_++;
     assert(stage_index_ <= num_stages);

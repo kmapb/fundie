@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <string>
 
+#include "stage.h"
 #include "position.h"
 
 struct Fund {
@@ -49,6 +50,9 @@ struct Fund {
     double carried_interest() const {
         return carry_paid_;
     } 
+    double fees_paid() const {
+        return fees_paid_;
+    }
 
     double commitments() const {
         return lp_commitments_ + gp_commitments_;
@@ -62,6 +66,7 @@ struct Fund {
 
   protected:
     void distribute(const Position& pos);
+    Stage::Result tick_one_position(CalTime now, const std::string& posname);
 
     typedef std::unordered_map<std::string, Position> PositionMap;
     typedef std::unordered_set<std::string> PositionSet;

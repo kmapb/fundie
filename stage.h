@@ -12,7 +12,7 @@ struct Stage {
     const char* name;
     const pct_t next_stage_factor;
     const pct_t option_pool;
-
+    const pct_t dilution;
     // State transition probabiblities
     const prob_t p_write_off;
     const prob_t p_exit;
