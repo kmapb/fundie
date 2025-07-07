@@ -2,6 +2,7 @@
 #include <yaml-cpp/yaml.h>
 #include <vector>
 #include <getopt.h>
+#include <thread>
 #include <cstdlib>
 #include "stage.h"
 #include "fund.h"
@@ -55,9 +56,50 @@ FundConfig load_config(const std::string& filename) {
     return fund_config;
 }
 
-void run_single_simulation(const FundConfig& config, int simulation_num) {
-    printf("\n=== Simulation %d ===\n", simulation_num);
+struct SimulationResult {
+    double distributions;
+    double distributions_to_lps;
+    double distributions_to_gps;
+    double carried_interest;
+    double fees_paid;
+    double dry_powder;
+};
 
+enum output_format {
+    CSV,
+    TEXT,
+};
+
+void print_simulation_result_header(output_format format) {
+    if (format == TEXT) {
+        return;
+    }
+    assert(format == CSV);
+    printf("distributions,distributions_to_lps,distributions_to_gps,carried_interest,fees_paid,dry_powder\n");
+}
+
+void print_results(const SimulationResult& result, output_format format) {
+    if (format == TEXT) {
+        printf("distributions: $%'.2fM\n", result.distributions / 1e6);
+        printf("    to LPs   : $%'.2fM\n", result.distributions_to_lps / 1e6);
+        printf(".   to GPs   : $%'.2fM\n", result.distributions_to_gps / 1e6);
+        printf("    carried  : $%'.2fM\n", result.carried_interest / 1e6);
+        printf("    fees     : $%'.2fM\n", result.fees_paid / 1e6);
+        printf("cash returned: $%'.2fM\n", result.dry_powder / 1e6);
+        return;
+    }
+    assert(format == CSV);
+    printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+           result.distributions,
+           result.distributions_to_lps,
+           result.distributions_to_gps,
+           result.carried_interest,
+           result.fees_paid,
+           result.dry_powder);
+}
+
+ SimulationResult
+ run_single_simulation(const FundConfig& config) {
     // Create fund with loaded parameters
     Fund pb2 { config.lp_commitments, config.gp_commitments, config.carry, config.carry_hurdle, config.fees };
 
@@ -80,18 +122,22 @@ void run_single_simulation(const FundConfig& config, int simulation_num) {
     }
 
     pb2.run_to_completion();
-    printf("distributions: $%'.2fM\n", pb2.distributed() / 1e6);
-    printf("    to LPs   : $%'.2fM\n", pb2.distributed_to_lps() / 1e6);
-    printf("    to GPs   : $%'.2fM\n", pb2.distributed_to_gps() / 1e6);
-    printf("    carried  : $%'.2fM\n", pb2.carried_interest() / 1e6);
-    printf("    fees     : $%'.2fM\n", pb2.fees_paid() / 1e6);
-    printf("cash returned: $%'.2fM\n", pb2.dry_powder() / 1e6);
+    return {
+        pb2.distributed(),
+        pb2.distributed_to_lps(),
+        pb2.distributed_to_gps(),
+        pb2.carried_interest(),
+        pb2.fees_paid(),
+        pb2.dry_powder(),
+    };
 }
 
 void print_usage(const char* program_name) {
     printf("Usage: %s [OPTIONS] [config_file]\n", program_name);
     printf("Options:\n");
     printf("  -n, --num-runs=N    Number of simulations to run (default: 1)\n");
+    printf("  -c, --csv           Output results in CSV format\n");
+    printf("  -j, --jobs=N        Thread-level parallelism\n");
     printf("  -h, --help          Show this help message\n");
     printf("\n");
     printf("If config_file is not specified, defaults to 'data/config.yaml'\n");
@@ -99,18 +145,22 @@ void print_usage(const char* program_name) {
 
 int main(int argc, char** argv) {
     int num_runs = 1;
+    int jobs = 1;
     const char* config_file = "data/config.yaml";
+    auto output_format = TEXT;
 
     // Parse command line arguments
     static struct option long_options[] = {
         {"num-runs", required_argument, 0, 'n'},
+        {"jobs", required_argument, 0, 'j'},
         {"help", no_argument, 0, 'h'},
+        {"csv", no_argument, 0, 'c'},
         {0, 0, 0, 0}
     };
 
     int opt;
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "n:h", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "n:j:ch", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'n':
                 num_runs = atoi(optarg);
@@ -122,6 +172,16 @@ int main(int argc, char** argv) {
             case 'h':
                 print_usage(argv[0]);
                 return 0;
+            case 'c':
+                output_format = CSV;
+                break;
+            case 'j':
+                jobs = atoi(optarg);
+                if (jobs <= 0) {
+                    fprintf(stderr, "Error: Number of jobs must be positive\n");
+                    return 1;
+                }
+                break;
             default:
                 print_usage(argv[0]);
                 return 1;
@@ -133,25 +193,31 @@ int main(int argc, char** argv) {
         config_file = argv[optind];
     }
 
-    printf("yarr ...\n");
-    for (int i = 0; i < num_stages; i++) {
-        printf("s[%s]: %g\n", stages[i].name, stages[i].p_exit);
-    }
-
-    printf("\nRunning %d simulation%s with config: %s\n",
-           num_runs, (num_runs == 1) ? "" : "s", config_file);
-
     // Load configuration from YAML file
     FundConfig config = load_config(config_file);
 
+    print_simulation_result_header(output_format);
+
     // Run simulations
-    for (int i = 1; i <= num_runs; i++) {
-        run_single_simulation(config, i);
+    std::vector<SimulationResult> results;
+    results.resize(num_runs);
+    std::vector<std::thread> threads;
+    for (int i = 0; i < jobs; i++) {
+        int threads_per_job = std::ceil(1.0 * num_runs / jobs);
+        threads.emplace_back([i, threads_per_job, num_runs, &results, &config]() {
+            auto my_start = i * threads_per_job;
+            auto my_end = std::min(my_start + threads_per_job, num_runs);
+            for (auto j = my_start; j < my_end; j++) {
+                results[j] = run_single_simulation(config);
+            }
+        });
     }
-
-    if (num_runs > 1) {
-        printf("\n=== Completed %d simulations ===\n", num_runs);
+            
+    for (auto& t: threads) {
+        t.join();
     }
-
+    for (const auto& result: results) {
+        print_results(result, output_format);
+    }
     return 0;
 }
