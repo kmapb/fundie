@@ -4,3 +4,5 @@ CMakeCache.txt
 CMakeFiles/*
 subprojects/*
 data/*
+.venv/*
+.ipynb_checkpoints/*
