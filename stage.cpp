@@ -1,19 +1,16 @@
 #include "stage.h"
 #include "round.h"
 
-constexpr double M = 1e6;
-constexpr double B = 1e9;
-
 const Stage stages[] = {
-    //Name          Growth    options dilution p(die)  p(exit)
-    { "Seed",       2.25,     0.2,    0.2,     0.35,   0.1 },
-    { "Series A",   2.75,     0.15,   0.2,     0.30,   0.15 },
-    { "Series B",   2.5,      0.1,    0.2,     0.23,   0.175 },
-    { "Series C",   2.75,     0.25,   0.2,     0.23,   0.2},
-    { "Series D",   2.75,     0.04,   0.2,     0.20,   0.3 },
-    { "Series E",   2.25,     0,      0.2,     0.15,   0.35 },
-    { "Series F",   3.00,     0,      0.2,     0.1,    0.5},
-    { "IPO",        3.00,     0,      0.2,     0.00,   1.0 },
+    //Name          Growth  options dilution p(die) p(exit)
+    { "Seed",       2.5,    0.18,   0.22,    0.50,  0.03 },
+    { "Series A",   2.5,    0.12,   0.22,    0.35,  0.07 },
+    { "Series B",   2.0,    0.08,   0.18,    0.25,  0.10 },
+    { "Series C",   1.75,   0.06,   0.15,    0.20,  0.15 },
+    { "Series D",   1.5,    0.04,   0.12,    0.15,  0.20 },
+    { "Series E",   1.3,    0.02,   0.10,    0.10,  0.30 },
+    { "Series F",   1.25,   0.00,   0.10,    0.05,  0.50 },
+    { "IPO",        1.00,   0.00,   0.00,    0.00,  1.00 },
 };
 
 const int num_stages = sizeof(stages) / sizeof(Stage);

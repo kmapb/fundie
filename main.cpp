@@ -145,7 +145,7 @@ void print_usage(const char* program_name) {
 
 int main(int argc, char** argv) {
     int num_runs = 1;
-    int jobs = 1;
+    int jobs = ::sysconf(_SC_NPROCESSORS_ONLN);
     const char* config_file = "data/config.yaml";
     auto output_format = TEXT;
 
