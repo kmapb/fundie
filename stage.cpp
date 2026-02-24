@@ -32,7 +32,8 @@ const StageMap& get_stage_map() {
 Stage::Result
 Stage::traverse_stage(Asset& asset) const {
     auto result = Result::CONTINUE;
-    auto dice = double(random()) / RAND_MAX;
+    // Normalize into [0, 1) so p=1.0 remains deterministic.
+    auto dice = double(random()) / (double(RAND_MAX) + 1.0);
     if (dice < p_write_off) {
         asset.set_value(0.0);
         return Result::DIE;
