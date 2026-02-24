@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <thread>
 #include <cstdlib>
+#include <stdexcept>
 #include "stage.h"
 #include "fund.h"
 #include "debug.h"
@@ -21,6 +22,7 @@ struct FundConfig {
     double carry;
     double carry_hurdle;
     double fees;
+    double recycling;
     std::vector<InvestmentConfig> investments;
 };
 
@@ -36,6 +38,10 @@ FundConfig load_config(const std::string& filename) {
     fund_config.carry = fund_node["carry"].as<double>();
     fund_config.carry_hurdle = fund_node["carry_hurdle"].as<double>();
     fund_config.fees = fund_node["fees"].as<double>();
+    fund_config.recycling = fund_node["recycling"] ? fund_node["recycling"].as<double>() : 1.0;
+    if (fund_config.recycling < 1.0) {
+        throw std::invalid_argument("fund.recycling must be >= 1.0");
+    }
 
     // Load investments
     auto investments_node = config["investments"];
@@ -101,7 +107,14 @@ void print_results(const SimulationResult& result, output_format format) {
  SimulationResult
  run_single_simulation(const FundConfig& config) {
     // Create fund with loaded parameters
-    Fund pb2 { config.lp_commitments, config.gp_commitments, config.carry, config.carry_hurdle, config.fees };
+    Fund pb2 {
+        config.lp_commitments,
+        config.gp_commitments,
+        config.carry,
+        config.carry_hurdle,
+        config.fees,
+        config.recycling,
+    };
 
     // Process each investment from config. We need a root-of-liveness
     // for assets separate from the stack, since they have an independent

@@ -20,6 +20,7 @@ void Fund::deploy(Asset &a, CalTime ymd, const double value) {
     auto &p = get_position(a);
     auto shares = a.accept_new_money(value);
     p.buy(ymd, value, shares);
+    dry_powder_ -= value;
     deployed_ += value;
     active_positions_.insert(a.name());
 
@@ -31,6 +32,18 @@ void Fund::distribute(const Position& pos) {
     dbg(fund, ("distributing %g from %s\n", pos.value(), pos.underlying_asset().name().c_str()));
     assert(active_positions_.find(pos.underlying_asset().name()) != active_positions_.end());
     auto proceeds = pos.value();
+
+    // Recycling diverts liquidation proceeds into future deployable cash,
+    // bounded by the configured recycling cap.
+    auto recyclable_remaining = max_recyclable_capital() - recycled_total_;
+    if (recyclable_remaining > 0.0 && proceeds > 0.0) {
+        auto recycled_now = std::min(proceeds, recyclable_remaining);
+        proceeds -= recycled_now;
+        dry_powder_ += recycled_now;
+        recycled_total_ += recycled_now;
+    }
+    if (proceeds < 1.0) return;
+
     // Some helpers
     auto distribute_to = [&](double& dest, double amount) {
         dest += amount;
@@ -113,6 +126,7 @@ void Fund::tick() {
     if (dry_powder() > 0) {
         auto to_pay = std::min(fees_ * commitments(), dry_powder());
         fees_paid_ += to_pay;
+        dry_powder_ -= to_pay;
     }
     std::vector<std::string> to_erase {};
     auto year = 2025 + stage_index_;

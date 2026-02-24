@@ -9,22 +9,31 @@
 struct Fund {
     Fund(double lp_commitments, double gp_commitments = 0.0,
         double carry = 0.2, double carry_hurdle = 1.0,
-         double fees = 0.02)
+         double fees = 0.02, double recycling = 1.0)
         : lp_commitments_(lp_commitments)
         , gp_commitments_(gp_commitments)
         , carry_(carry)
         , carry_hurdle_(carry_hurdle)
         , carry_paid_(0.0)
         , fees_(fees)
+        , recycling_(recycling)
+        , dry_powder_(lp_commitments + gp_commitments)
+        , recycled_total_(0.0)
         , fees_paid_(0.0)
         , deployed_(0.0)
         , distributed_to_lps_(0.0)
         , distributed_to_gps_(0.0)
         , stage_index_(0)
-    { }
+    {
+        assert(recycling_ >= 1.0);
+    }
 
     double fund_size() const {
-        return lp_commitments_ + gp_commitments_;
+        return commitments();
+    }
+
+    double max_recyclable_capital() const {
+        return commitments() * (recycling_ - 1.0);
     }
 
     double deployed() const {
@@ -32,7 +41,7 @@ struct Fund {
     }
 
     double dry_powder() const {
-        return fund_size() - deployed_ - fees_paid_;
+        return dry_powder_;
     }
 
     double distributed() const {
@@ -76,6 +85,9 @@ struct Fund {
     double carry_hurdle_;
     double carry_paid_;
     double fees_;
+    double recycling_;
+    double dry_powder_;
+    double recycled_total_;
     double fees_paid_;
     double deployed_;
     double distributed_to_lps_;
